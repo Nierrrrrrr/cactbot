@@ -45,6 +45,9 @@ export interface Data extends RaidbossData {
   trine?: string[];
   secondTrineResponse?: string;
   trineLocations?: (number[] | undefined)[];
+
+  waterDown?: string;
+  lightningDown?: string;
 }
 
 // In your cactbot/user/raidboss.js file, add the line:
@@ -272,6 +275,26 @@ const nisiPassOutputStrings = {
     cn: '从 ${player}获得${type}',
     ko: '나이사이 가져오기: ${type} ← ${player}',
   },
+};
+
+const namedNisiPassModified = (data: Data, output: Output) => {
+  const finalNisiMap = data.finalNisiMap;
+  const nisiMap = data.nisiMap;
+
+  if (!finalNisiMap || !nisiMap)
+    return output.unknown!();
+  if (!(data.me in finalNisiMap))
+    return output.unknown!();
+
+  if (data.me in nisiMap) {
+    // nisiMap[data.me] = 0, 1, 2, 3 => a, b, c, d
+    if (data.role === 'healer' || data.role === 'tank') {
+      // player is T or H & has nisi in 3rd pass
+      const nisiNames = Object.keys(nisiMap);
+    } else {
+      // player is D & has nisi in 3rd pass
+    }
+  }
 };
 
 // Convenience function called for third and fourth nisi passes.
@@ -1146,6 +1169,22 @@ const triggerSet: TriggerSet<Data> = {
       },
     },
     {
+      id: 'TEA Water Down',
+      type: 'GainsEffect',
+      netRegex: NetRegexes.gainsEffect({ effectId: '860' }),
+      run: (data, matches) => {
+        data.waterDown = matches.target;
+      }
+    },
+    {
+      id: 'TEA Lighting Down',
+      type: 'GainsEffect',
+      netRegex: NetRegexes.gainsEffect({ effectId: '861' }),
+      run: (data, matches) => {
+        data.lightningDown = matches.target;
+      }
+    },
+    {
       id: 'TEA Pass Nisi 1',
       type: 'StartsUsing',
       // 4 seconds after Photon cast starts.
@@ -1206,8 +1245,8 @@ const triggerSet: TriggerSet<Data> = {
       netRegexJa: NetRegexes.startsUsing({ source: 'ブルートジャスティス', id: '4845', capture: false }),
       netRegexCn: NetRegexes.startsUsing({ source: '残暴正义号', id: '4845', capture: false }),
       netRegexKo: NetRegexes.startsUsing({ source: '포악한 심판자', id: '4845', capture: false }),
-      delaySeconds: 8,
-      durationSeconds: 9,
+      delaySeconds: 6,
+      durationSeconds: 11,
       alertText: (data, _matches, output) => namedNisiPass(data, output),
       outputStrings: nisiPassOutputStrings,
     },
