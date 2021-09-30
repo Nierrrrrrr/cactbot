@@ -275,6 +275,22 @@ const nisiPassOutputStrings = {
     cn: '从 ${player}获得${type}',
     ko: '나이사이 가져오기: ${type} ← ${player}',
   },
+  modifiedGetNisi: {
+    en: '看疫苗 ${positions}',
+    de: '看疫苗 ${positions}',
+    fr: '看疫苗 ${positions}',
+    ja: '看疫苗 ${positions}',
+    cn: '看疫苗 ${positions}',
+    ko: '看疫苗 ${positions}',
+  },
+  modifiedPassNisi: {
+    en: '看毒 ${positions}',
+    de: '看毒 ${positions}',
+    fr: '看毒 ${positions}',
+    ja: '看毒 ${positions}',
+    cn: '看毒 ${positions}',
+    ko: '看毒 ${positions}',
+  },
 };
 
 const namedNisiPassModified = (data: Data, output: Output) => {
@@ -286,14 +302,68 @@ const namedNisiPassModified = (data: Data, output: Output) => {
   if (!(data.me in finalNisiMap))
     return output.unknown!();
 
+  const convertNameToPosition = (name: string) => {
+    let position;
+    if (name === data.bruteTank) {
+      // MT = Left
+      position = "左";
+    } else if (name === data.cruiseTank) {
+      // ST = Down
+      position = "下";
+    } else if (name === data.lightningDown) {
+      // 1 water H = Up
+      position = "上";
+    } else {
+      position = "右"
+    }
+    return position;
+  };
+
+  const positions: string[] = [];
   if (data.me in nisiMap) {
     // nisiMap[data.me] = 0, 1, 2, 3 => a, b, c, d
     if (data.role === 'healer' || data.role === 'tank') {
       // player is T or H & has nisi in 3rd pass
       const nisiNames = Object.keys(nisiMap);
+      for (let i = 0; i < nisiNames.length; i++) {
+        const name = nisiNames[i];
+        if (name === undefined) {
+          return output.unknown!();
+        }
+        const nisi = nisiMap[name];
+        if (nisi === undefined) {
+          return output.unknown!();
+        }
+
+        positions[nisi] = convertNameToPosition(name);
+      }
     } else {
       // player is D & has nisi in 3rd pass
     }
+
+    return output.modifiedGetNisi!({ positions: positions.join('') });
+  } else {
+    // nisiMap[data.me] = 0, 1, 2, 3 => a, b, c, d
+    if (data.role === 'healer' || data.role === 'tank') {
+      // player is T or H & has no nisi in 3rd pass
+      const finalNisiNames = Object.keys(finalNisiMap);
+      for (let i = 0; i < finalNisiNames.length; i++) {
+        const name = finalNisiNames[i];
+        if (name === undefined) {
+          return output.unknown!();
+        }
+        const finalNisi = finalNisiMap[name];
+        if (finalNisi === undefined) {
+          return output.unknown!();
+        }
+
+        positions[finalNisi] = convertNameToPosition(name);
+      }
+    } else {
+      // player is D & has no nisi in 3rd pass
+    }
+
+    return output.modifiedPassNisi!({ positions: positions.join('') });
   }
 };
 
@@ -1247,7 +1317,7 @@ const triggerSet: TriggerSet<Data> = {
       netRegexKo: NetRegexes.startsUsing({ source: '포악한 심판자', id: '4845', capture: false }),
       delaySeconds: 6,
       durationSeconds: 11,
-      alertText: (data, _matches, output) => namedNisiPass(data, output),
+      alertText: (data, _matches, output) => namedNisiPassModified(data, output),
       outputStrings: nisiPassOutputStrings,
     },
     {
